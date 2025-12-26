@@ -1,0 +1,155 @@
+# CloudFormation file for lab 2, which creates a cloud formation stack with: 
+# - Load Balancer, an AutoScaling Group launching EC2 instances behind the Load Balancer, using a Launch Template for the AutoScaling Group.
+# - VPC with two public subnets in different availability zones
+# - EC2 instances acting as web servers using User Data
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Lab 2: Load Balancer with AutoScaling Group'
+Resources:
+  Lab2VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Lab2VPC
+  PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref Lab2VPC
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet1
+  PublicSubnet2:
+    Type: 'AWS::EC2::Subnet'  
+    Properties:
+      VpcId: !Ref Lab2VPC
+      CidrBlock: '10.0.2.0/24'
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet2
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Lab2IGW  
+  AttachIGW:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Lab2VPC
+      InternetGatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'    
+    Properties:
+      VpcId: !Ref Lab2VPC
+      Tags:
+        - Key: Name
+          Value: PublicRouteTable
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+  Subnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  Subnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+  Lab2LaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'  
+    Properties:
+      LaunchTemplateName: Lab2LaunchTemplate
+      LaunchTemplateData:
+        ImageId: ami-068c0051b15cdb816 # Amazon Linux 2 AMI (HVM), SSD Volume Type
+        InstanceType: t3.micro
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y python3
+            echo "Hello, World from Lab 2!" > /home/ec2-user/index.html
+            nohup python3 -m http.server 80 --directory /home/ec2-user/ &
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: Lab2Instance
+  Lab2AutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'    
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref Lab2LaunchTemplate
+        Version: !GetAtt Lab2LaunchTemplate.LatestVersionNumber
+      MinSize: '2'
+      MaxSize: '4'
+      DesiredCapacity: '2'
+      Tags:
+        - Key: Name
+          Value: Lab2ASGInstance
+          PropagateAtLaunch: true
+  Lab2LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer' 
+    Properties:
+      Name: Lab2LoadBalancer
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      Scheme: internet-facing
+      SecurityGroups: []
+      Tags:
+        - Key: Name
+          Value: Lab2LoadBalancer
+  Lab2TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: Lab2TargetGroup
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref Lab2VPC
+      TargetType: instance
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: '80'
+      HealthCheckPath: /
+      Matcher:
+        HttpCode: '200'
+  Lab2Listener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener' 
+    Properties:
+      LoadBalancerArn: !Ref Lab2LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref Lab2TargetGroup
+  Lab2AutoScalingAttachment:
+    Type: 'AWS::AutoScaling::Attachment'
+    Properties:
+      AutoScalingGroupName: !Ref Lab2AutoScalingGroup
+      TargetGroupARNs:
+        - !Ref Lab2TargetGroup
+Outputs:
+  LoadBalancerDNSName:
+    Description: 'DNS Name of the Load Balancer'
+    Value: !GetAtt Lab2LoadBalancer.DNSName 
+    Export:
+      Name: Lab2LoadBalancerDNSName
+
+
+
