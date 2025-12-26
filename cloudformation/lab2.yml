@@ -100,6 +100,8 @@ Resources:
       MinSize: '2'
       MaxSize: '4'
       DesiredCapacity: '2'
+      TargetGroupARNs:
+        - !Ref Lab2TargetGroup
       Tags:
         - Key: Name
           Value: Lab2ASGInstance
@@ -138,12 +140,7 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref Lab2TargetGroup
-  Lab2AutoScalingAttachment:
-    Type: 'AWS::AutoScaling::Attachment'
-    Properties:
-      AutoScalingGroupName: !Ref Lab2AutoScalingGroup
-      TargetGroupARNs:
-        - !Ref Lab2TargetGroup
+  
 Outputs:
   LoadBalancerDNSName:
     Description: 'DNS Name of the Load Balancer'
