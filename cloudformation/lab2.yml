@@ -109,7 +109,7 @@ Resources:
             #!/bin/bash
             yum update -y
             yum install -y python3
-            echo "Hello from the app" > /home/ec2-user/index.html
+            echo "Hello from the app!!" > /home/ec2-user/index.html
             nohup python3 -m http.server 80 --directory /home/ec2-user/ &
         TagSpecifications:
           - ResourceType: instance
@@ -124,7 +124,7 @@ Resources:
         - !Ref PublicSubnet2
       LaunchTemplate:
         LaunchTemplateId: !Ref Lab2LaunchTemplate
-        Version: !GetAtt Lab2LaunchTemplate.LatestVersionNumber
+        Version: '$Latest'
       MinSize: '2'
       MaxSize: '4'
       DesiredCapacity: '2'
