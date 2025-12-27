@@ -136,8 +136,10 @@ Resources:
           PropagateAtLaunch: true
   Lab2CPUScalingPolicy:
     Type: 'AWS::AutoScaling::ScalingPolicy'
+    # Ensure the ASG exists before this policy is even looked at
+    DependsOn: Lab2AutoScalingGroup
     Properties:
-      PolicyName: !Sub '${AWS::StackName}-CPUPolicy'
+      #PolicyName: !Sub '${AWS::StackName}-CPUPolicy'
       AutoScalingGroupName: !Ref Lab2AutoScalingGroup
       PolicyType: TargetTrackingScaling
       TargetTrackingConfiguration:
