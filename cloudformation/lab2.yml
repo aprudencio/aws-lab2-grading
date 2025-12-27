@@ -69,6 +69,32 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
+  Lab2ALBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for Lab2 Load Balancer'
+      VpcId: !Ref Lab2VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Lab2ALBSecurityGroup
+  Lab2EC2SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for Lab2 EC2 instances'
+      VpcId: !Ref Lab2VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref Lab2ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Lab2EC2SecurityGroup
   Lab2LaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'  
     Properties:
@@ -76,6 +102,8 @@ Resources:
       LaunchTemplateData:
         ImageId: ami-068c0051b15cdb816 # Amazon Linux 2 AMI (HVM), SSD Volume Type
         InstanceType: t3.micro
+        SecurityGroupIds:
+          - !Ref Lab2EC2SecurityGroup
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
@@ -114,7 +142,8 @@ Resources:
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
       Scheme: internet-facing
-      SecurityGroups: []
+      SecurityGroups:
+        - !Ref Lab2ALBSecurityGroup
       Tags:
         - Key: Name
           Value: Lab2LoadBalancer
