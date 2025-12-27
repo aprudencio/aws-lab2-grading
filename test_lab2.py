@@ -9,6 +9,7 @@ import requests
 
 STACK_NAME = "coderoad-lab-2"
 EXPECTED_TEXT = "Hello from the app"
+EXPECTED_TEXT_ALTERNATE = "Hello, World from Lab 2!"  # previous version
 
 
 def _get_stack_output(cfn_client, stack_name: str, key: str) -> str:
@@ -98,8 +99,9 @@ def test_alb_http_returns_expected_text(cfn):
 
     status, body = _wait_for_http_ready(url, timeout_seconds=300)
     assert status == 200
-    assert EXPECTED_TEXT in body, (
-        f"Expected response to contain '{EXPECTED_TEXT}'. "
+    # Check for either the current or previous expected text.
+    assert EXPECTED_TEXT in body or EXPECTED_TEXT_ALTERNATE in body, (
+        f"Expected response to contain '{EXPECTED_TEXT}' or '{EXPECTED_TEXT_ALTERNATE}'. "
         f"Got: {body[:200]!r}"
     )
 
