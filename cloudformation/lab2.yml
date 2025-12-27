@@ -134,17 +134,18 @@ Resources:
         - Key: Name
           Value: Lab2ASGInstance
           PropagateAtLaunch: true
-  # Lab2CPUScalingPolicy:
-  #   Type: 'AWS::AutoScaling::ScalingPolicy'
-  #   Properties:
-  #     AutoScalingGroupName: !Ref Lab2AutoScalingGroup
-  #     PolicyType: TargetTrackingScaling
-  #     TargetTrackingConfiguration:
-  #       PredefinedMetricSpecification:
-  #         PredefinedMetricType: ASGAverageCPUUtilization
-  #       TargetValue: 3.0
-  #       DisableScaleIn: false
-  #       EstimatedInstanceWarmup: 300
+  Lab2CPUScalingPolicy:
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-CPUPolicy'
+      AutoScalingGroupName: !Ref Lab2AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 30.0
+        DisableScaleIn: false
+        EstimatedInstanceWarmup: 300
   Lab2LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer' 
     Properties:
